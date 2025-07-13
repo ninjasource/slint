@@ -32,7 +32,6 @@ use embassy_stm32::{
     time::Hertz,
 };
 use embassy_time::{Duration, Timer};
-use gt911::Gt911Blocking;
 use mcu_embassy::{
     controller::{self, Action, Controller},
     mcu::{double_buffer::DoubleBuffer, hardware::HardwareMcu, rcc_setup, ALLOCATOR},
@@ -58,7 +57,7 @@ bind_interrupts!(struct Irqs {
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
-    let p = rcc_setup::stm32u5g9zj_init();
+    let p = rcc_setup::stm32u5g9zj_4_3_9mhz_init();
 
     static HEAP: StaticCell<[u8; HEAP_SIZE]> = StaticCell::new();
     static FB1: StaticCell<[TargetPixelType; DISPLAY_WIDTH * DISPLAY_HEIGHT]> = StaticCell::new();
@@ -101,52 +100,45 @@ async fn main(spawner: Spawner) {
     // used for the touch events
     // NOTE: Async i2c communication returns a Timeout error so we will use blocking i2c until this is fixed
     let i2c: I2c<'_, mode::Blocking> =
-        I2c::new_blocking(p.I2C2, p.PF1, p.PF0, Hertz(100_000), Default::default());
-
-    // TASK: blink the red led on another task
-    let red_led = Output::new(p.PD2, Level::High, Speed::Low);
-    unwrap!(spawner.spawn(led_task(red_led)));
+        I2c::new_blocking(p.I2C1, p.PG14, p.PG13, Hertz(100_000), Default::default());
 
     // TASK: wait for hardware user button press
-    let user_btn = ExtiInput::new(p.PC13, p.EXTI13, Pull::Down);
+    let user_btn = ExtiInput::new(p.PF2, p.EXTI2, Pull::Down);
     unwrap!(spawner.spawn(user_btn_task(user_btn)));
 
-    // set up the LTDC peripheral to send data to the LCD screen
-    // numbers from STM32U5G9J-DK2.ioc
-    const RK050HR18H_HSYNC: u16 = 5; // Horizontal synchronization
-    const RK050HR18H_HBP: u16 = 8; // Horizontal back porch
-    const RK050HR18H_HFP: u16 = 8; // Horizontal front porch
-    const RK050HR18H_VSYNC: u16 = 5; // Vertical synchronization
-    const RK050HR18H_VBP: u16 = 8; // Vertical back porch
-    const RK050HR18H_VFP: u16 = 8; // Vertical front porch
+    const HORIZONTAL_BACK_PORCH: u16 = 43; // Horizontal back porch
+    const HORIZONTAL_FRONT_PORCH: u16 = 8; // Horizontal front porch
+    const HORIZONTAL_PULSE_WIDTH: u16 = 4; // Horizontal synchronization
+    const VERTICAL_BACK_PORCH: u16 = 12; // Vertical back porch
+    const VERTICAL_FRONT_PORCH: u16 = 8; // Vertical front porch
+    const VERTICAL_PULSE_WIDTH: u16 = 4; // Vertical synchronization
 
-    // NOTE: all polarities have to be reversed with respect to the STM32U5G9J-DK2 CubeMX parametrization
     let ltdc_config = LtdcConfiguration {
         active_width: DISPLAY_WIDTH as _,
         active_height: DISPLAY_HEIGHT as _,
-        h_back_porch: RK050HR18H_HBP,
-        h_front_porch: RK050HR18H_HFP,
-        v_back_porch: RK050HR18H_VBP,
-        v_front_porch: RK050HR18H_VFP,
-        h_sync: RK050HR18H_HSYNC,
-        v_sync: RK050HR18H_VSYNC,
-        h_sync_polarity: PolarityActive::ActiveHigh,
-        v_sync_polarity: PolarityActive::ActiveHigh,
-        data_enable_polarity: PolarityActive::ActiveHigh,
-        pixel_clock_polarity: PolarityEdge::RisingEdge,
+        h_back_porch: HORIZONTAL_BACK_PORCH,
+        h_front_porch: HORIZONTAL_FRONT_PORCH,
+        v_back_porch: VERTICAL_BACK_PORCH,
+        v_front_porch: VERTICAL_FRONT_PORCH,
+        h_sync: HORIZONTAL_PULSE_WIDTH,
+        v_sync: VERTICAL_PULSE_WIDTH,
+        h_sync_polarity: PolarityActive::ActiveLow,
+        v_sync_polarity: PolarityActive::ActiveLow,
+        data_enable_polarity: PolarityActive::ActiveLow,
+        pixel_clock_polarity: PolarityEdge::FallingEdge,
     };
 
     info!("init ltdc");
-    let mut ltdc_de = Output::new(p.PD6, Level::Low, Speed::High);
-    let mut ltdc_disp_ctrl = Output::new(p.PE4, Level::Low, Speed::High);
-    let mut ltdc_bl_ctrl = Output::new(p.PE6, Level::Low, Speed::High);
+    let mut ltdc_disp_ctrl = Output::new(p.PG15, Level::Low, Speed::High);
+    let mut ltdc_bl_ctrl = Output::new(p.PC6, Level::Low, Speed::High);
     let mut ltdc = Ltdc::new_with_pins(
         p.LTDC, // PERIPHERAL
         Irqs,   // IRQS
         p.PD3,  // CLK
         p.PE0,  // HSYNC
         p.PD13, // VSYNC
-        p.PB9,  // B0
+        p.PD6,  // DE
+        p.PE4,  // B0
         p.PB2,  // B1
         p.PD14, // B2
         p.PD15, // B3
@@ -154,25 +146,25 @@ async fn main(spawner: Spawner) {
         p.PD1,  // B5
         p.PE7,  // B6
         p.PE8,  // B7
-        p.PC8,  // G0
-        p.PC9,  // G1
+        p.PE5,  // G0
+        p.PE6,  // G1
         p.PE9,  // G2
         p.PE10, // G3
         p.PE11, // G4
         p.PE12, // G5
         p.PE13, // G6
         p.PE14, // G7
-        p.PC6,  // R0
-        p.PC7,  // R1
+        p.PE2,  // R0
+        p.PE3,  // R1
         p.PE15, // R2
         p.PD8,  // R3
         p.PD9,  // R4
         p.PD10, // R5
         p.PD11, // R6
         p.PD12, // R7
+        Speed::VeryHigh,
     );
     ltdc.init(&ltdc_config);
-    ltdc_de.set_low();
     ltdc_bl_ctrl.set_high();
     ltdc_disp_ctrl.set_high();
 
@@ -207,7 +199,7 @@ async fn main(spawner: Spawner) {
     let main_window = MainWindow::new().unwrap();
     main_window.show().expect("unable to show main window");
 
-    let green_led = Output::new(p.PD4, Level::High, Speed::Low);
+    let green_led = Output::new(p.PD5, Level::High, Speed::Low);
     let hardware = HardwareMcu { green_led };
 
     // run the controller event loop
@@ -231,19 +223,6 @@ unsafe fn init_fb_in_place(
 
     // Safety: we have written valid bytes to the data structure
     buf.assume_init_mut()
-}
-
-#[embassy_executor::task(pool_size = MY_TASK_POOL_SIZE)]
-async fn led_task(mut led: Output<'static>) {
-    loop {
-        // on
-        led.set_low();
-        Timer::after(Duration::from_millis(50)).await;
-
-        // off
-        led.set_high();
-        Timer::after(Duration::from_millis(450)).await;
-    }
 }
 
 // low latency button press with debounce and toggle state recovery (for data races)
@@ -290,7 +269,7 @@ pub async fn render_loop(
     mut i2c: I2c<'static, mode::Blocking>,
 ) {
     let mut last_touch: Option<slint::LogicalPosition> = None;
-    let touch = Gt911Blocking::default();
+    let touch = ft5xx6::Ft5xx6Blocking::default();
     touch.init(&mut i2c).unwrap();
 
     loop {
@@ -315,7 +294,7 @@ pub async fn render_loop(
 }
 
 fn process_touch(
-    touch: &Gt911Blocking<I2c<'static, mode::Blocking>>,
+    touch: &ft5xx6::Ft5xx6Blocking<I2c<'static, mode::Blocking>>,
     i2c: &mut I2c<'static, mode::Blocking>,
     last_touch: &mut Option<slint::LogicalPosition>,
     window: Rc<MinimalSoftwareWindow>,
@@ -348,11 +327,8 @@ fn process_touch(
                 }
             }
         }
-        Err(gt911::Error::I2C(e)) => {
+        Err(e) => {
             error!("failed to get touch point: {:?}", e);
-        }
-        Err(_) => {
-            // ignore as these are expected NotReady messages from the touchscreen
         }
     }
 }

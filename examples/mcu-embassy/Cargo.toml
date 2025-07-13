@@ -34,6 +34,7 @@ heapless = { version = "0.8", default-features = false, features = [
 ] }
 tinybmp = { version = "0.5" }
 static_cell = { version = "2" }
+ft5xx6 = { path = "../../../../ft5xx6", features = ["defmt"] }
 
 #slint = { version = "1.9.1", default-features = false, features = [
 #    "compat-1-2",
@@ -70,6 +71,15 @@ sdl2 = { version = "0.37.0", optional = true }
 object-pool = { version = "0.6.0", optional = true }
 embedded-hal = { version = "1.0.0", optional = true }
 gt911 = { version = "0.3", features = ["defmt"], optional = true }
+
+[patch.crates-io]
+embassy-stm32 = { path = "../../../embassy/embassy-stm32" }
+embassy-sync = { path = "../../../embassy/embassy-sync" }
+embassy-executor = { path = "../../../embassy/embassy-executor" }
+embassy-time = { path = "../../../embassy/embassy-time" }
+embassy-futures = { path = "../../../embassy/embassy-futures" }
+embassy-net-wiznet = { path = "../../../embassy/embassy-net-wiznet" }
+embassy-net = { path = "../../../embassy/embassy-net" }
 
 [features]
 default = ["mcu"]

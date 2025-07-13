@@ -1,0 +1,24 @@
+# Copyright © 2025 David Haig
+# SPDX-License-Identifier: MIT
+
+[package]
+name = "i-slint-renderer-stm32"
+description = "Stm32 based renderer for Slint using DMA2D hardware acceleration"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lib]
+path = "lib.rs"
+
+[features]
+default = []
+
+[dependencies]
+i-slint-core = { workspace = true, features = ["default"] }
+i-slint-core-macros = { workspace = true, features = ["default"] }
+i-slint-common = { workspace = true, features = ["default"] }

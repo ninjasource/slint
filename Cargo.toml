@@ -44,6 +44,7 @@ members = [
     'internal/backends/linuxkms',
     'internal/renderers/skia',
     'internal/renderers/femtovg',
+    'internal/renderers/stm32',
     'internal/common',
     'internal/compiler',
     'internal/compiler/parser-test-macro',
@@ -95,7 +96,7 @@ default-members = [
     'tools/viewer',
 ]
 
-resolver="2"
+resolver = "2"
 
 [workspace.package]
 description = "GUI toolkit to efficiently develop fluid graphical user interfaces for embedded devices and desktop applications"
@@ -112,7 +113,7 @@ version = "1.10.0"
 [workspace.dependencies]
 i-slint-backend-android-activity = { version = "=1.10.0", path = "internal/backends/android-activity", default-features = false }
 i-slint-backend-linuxkms = { version = "=1.10.0", path = "internal/backends/linuxkms", default-features = false }
-i-slint-backend-qt = { version = "=1.10.0", path="internal/backends/qt", default-features = false }
+i-slint-backend-qt = { version = "=1.10.0", path = "internal/backends/qt", default-features = false }
 i-slint-backend-selector = { version = "=1.10.0", path = "internal/backends/selector", default-features = false }
 i-slint-backend-testing = { version = "=1.10.0", path = "internal/backends/testing", default-features = false }
 i-slint-backend-winit = { version = "=1.10.0", path = "internal/backends/winit", default-features = false }
@@ -138,15 +139,28 @@ cfg_aliases = { version = "0.2.0" }
 clap = { version = "4.0", features = ["derive", "wrap_help"] }
 clru = { version = "0.6.0" }
 css-color-parser2 = { version = "1.0.1" }
-derive_more = { version = "1.0.0", default-features = false, features = ["deref", "deref_mut", "into", "from", "add", "add_assign", "mul", "not", "display"] }
+derive_more = { version = "1.0.0", default-features = false, features = [
+    "deref",
+    "deref_mut",
+    "into",
+    "from",
+    "add",
+    "add_assign",
+    "mul",
+    "not",
+    "display",
+] }
 euclid = { version = "0.22.1", default-features = false }
 fontdb = { version = "0.23.0", default-features = false }
 fontdue = { version = "0.9.0" }
 glutin = { version = "0.32.0", default-features = false }
-image = { version = "0.25", default-features = false, features = [ "png", "jpeg" ] }
+image = { version = "0.25", default-features = false, features = [
+    "png",
+    "jpeg",
+] }
 itertools = { version = "0.14" }
 log = { version = "0.4.17" }
-resvg = { version= "0.45.0", default-features = false, features = ["text"] }
+resvg = { version = "0.45.0", default-features = false, features = ["text"] }
 rowan = { version = "0.16.1" }
 rustybuzz = { version = "0.20.0" }
 send_wrapper = { version = "0.6.0" }
@@ -160,7 +174,9 @@ ttf-parser = { version = "0.25" }
 web-sys = { version = "0.3.72", default-features = false }
 smol_str = { version = "0.3.1" }
 rayon = { version = "1.10.0", default-features = false }
-raw-window-handle-06 = { package = "raw-window-handle", version = "0.6", features = ["alloc"] }
+raw-window-handle-06 = { package = "raw-window-handle", version = "0.6", features = [
+    "alloc",
+] }
 unicode-segmentation = { version = "1.12.0" }
 glow = { version = "0.16" }
 tikv-jemallocator = { version = "0.6" }
